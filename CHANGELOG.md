@@ -11,11 +11,13 @@ This project follows:
 
 ## [Unreleased]
 
-- No changes yet
+### Changed
+
+- Updated beat images for improved visual clarity
 
 ---
 
-## [0.1.0] – 2026-01-09
+## [0.1.0] – 2026-01-08
 
 ### Added
 
