@@ -24,12 +24,19 @@ def main():
     triggers the composition process and exports
     the final metronome video to disk.
     """
-    # Domain configuration
-    bpm = 120
-    number_of_bars = 16
-    metronome = Metronome(bpm=bpm, number_of_bars=number_of_bars) # Example parameters
+    # Configuration
+    fps: int = 30
+    bpm: int = 140
+    #number_of_bars OR target_duration_seconds
+    number_of_bars: int = 32
+    target_duration_seconds: float = 300.0
 
-    # Infrastructure builders
+    # Domain component
+    #metronome = Metronome(bpm=bpm, number_of_bars=number_of_bars) # Example parameters
+    # If using duration instead of bars:
+    metronome2 = Metronome(bpm=bpm, target_duration_seconds=target_duration_seconds)
+
+    # Builders
     audio_builder = AudioBuilder(
         downbeat_sound_path="assets/audio/downbeat.wav",
         accent_sound_path="assets/audio/accent.wav",
@@ -37,26 +44,38 @@ def main():
     )
 
     video_builder = VideoBuilder(
-        beat1_image_path="assets/images/beat1.png",
-        beat2_image_path="assets/images/beat2.png",
-        beat3_image_path="assets/images/beat3.png",
-        beat4_image_path="assets/images/beat4.png"
+        beat1_image_path="assets/_legacy/metronomo1_140bpm.png",
+        beat2_image_path="assets/_legacy/metronomo2_140bpm.png",
+        beat3_image_path="assets/_legacy/metronomo3_140bpm.png",
+        beat4_image_path="assets/_legacy/metronomo4_140bpm.png",
+        fps=fps
     )
 
     # Composition
-    composer = Composer(metronome=metronome, audio_builder=audio_builder, video_builder=video_builder)
+    composer = Composer(
+        metronome=metronome2, 
+        audio_builder=audio_builder, 
+        video_builder=video_builder
+    )
     final_video = composer.compose()
 
-    # Export 
-    output_path = f"output/final/final_metronome_video_{bpm}_bpm_{number_of_bars}_bars.mp4"
-    final_video.write_videofile(output_path, fps=video_builder.fps, audio_codec="aac", audio_fps=44100, audio_nbytes=2)
+    # Export TODO extract to a function/module
+    output_dir = "output/final"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"final_metronome_video_{bpm}_bpm_{int(metronome2.total_duration_seconds)}_seconds.mp4")
+    final_video.write_videofile(
+        output_path, 
+        fps=video_builder.fps, 
+        audio_codec="aac", 
+        audio_fps=44100, 
+        audio_nbytes=2)    
     print(f"Final video exported to {output_path}")
 
-    # Cleanup 
-    final_video.audio.close()
+    # Cleanup
+    if final_video.audio: # TODO: revisar si es necesario
+        final_video.audio.close()
     final_video.close()
-    if hasattr(final_video, '_temp_audio_path'):
-        os.remove(final_video._temp_audio_path)
+    composer.cleanup()
 
 if __name__ == "__main__":
     main()
