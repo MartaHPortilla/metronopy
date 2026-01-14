@@ -20,7 +20,12 @@ from audio_builder import AudioBuilder
 from video_builder import VideoBuilder
 
 class Composer:
-    def __init__(self, metronome: Metronome, audio_builder: AudioBuilder, video_builder: VideoBuilder):
+    def __init__(
+            self, 
+            metronome: Metronome, 
+            audio_builder: AudioBuilder,
+            video_builder: VideoBuilder,
+        ):
         self.metronome = metronome
         self.audio_builder = audio_builder
         self.video_builder = video_builder
@@ -35,6 +40,10 @@ class Composer:
 
         Returns final video clip with audio attached.
         """
+
+        if self._temp_audio_path is not None:
+            raise RuntimeError("compose() has already been called. Please cleanup() before calling again.")
+        
         # Generate beat sequence calling metronome function
         beats = self.metronome.build_beat_sequence()
 
@@ -51,7 +60,8 @@ class Composer:
         video_clip = self._generate_video_clip(beats)
         final_clip = self._attach_audio_to_video(video_clip, audio_path)
         return final_clip # REAL final audiovisual clip
-       
+    
+    # ----- Public Methods ----- #
 
     def cleanup(self) -> None:
         """
@@ -80,15 +90,13 @@ class Composer:
         Creates and post-processes the audio segment based on beat timing.
         """
         audio_segment = self.audio_builder.build_audio_track(beats)
-        audio_segment = audio_segment.normalize() # audio levels
-        audio_segment = audio_segment.set_channels(1) # mono
         return audio_segment
 
     def _generate_video_clip(self, beats: List[Beat]) -> VideoClip:
         """
         Builds the silent video clip based on beat timing.
         """
-        silent_video_clip = self.video_builder.build_video_track(beats=beats, metronome=self.metronome)
+        silent_video_clip = self.video_builder.build_video_track(beats=beats, seconds_per_beat= self.metronome.seconds_per_beat)
         return silent_video_clip
 
     def _attach_audio_to_video(self, silent_video_clip: VideoClip, audio_path: str) -> VideoClip:
