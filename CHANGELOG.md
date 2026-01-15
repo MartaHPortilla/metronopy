@@ -11,9 +11,21 @@ This project follows:
 
 ## [Unreleased]
 
+### Added
+
+- Support for metronome generation based on target duration (seconds).
+- Explicit FPS configuration from the entry point (`main`).
+
 ### Changed
 
-- Updated beat images for improved visual clarity
+- Update beat images for improved visual clarity
+- AudioBuilder now produces a fully finalized AudioSegment with deterministic duration.
+- Audio post-processing (sample rate, channels) is fully encapsulated in AudioBuilder.
+- Composer no longer handles audio technical parameters.
+
+### Refactored
+
+- Clear separation of responsibilities between Composer, AudioBuilder and VideoBuilder.
 
 ---
 
