@@ -73,9 +73,9 @@ class AudioBuilder:
         sound = sound.set_channels(self.channels) #TODO: dos veces?
         return sound
 
-    def _get_sound_for_beat(self, beat_type: BeatType) -> str:
+    def _get_sound_for_beat(self, beat_type: BeatType) -> AudioSegment:
         """
-        Returns the sound file path corresponding to the beat type.
+        Returns the A corresponding to the beat type.
         """
         if beat_type == BeatType.DOWNBEAT:
             return self.downbeat_sound
