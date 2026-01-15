@@ -70,12 +70,12 @@ class AudioBuilder:
         """
         sound = AudioSegment.from_wav(path)
         sound = sound.set_frame_rate(self.sample_rate)
-        sound = sound.set_channels(self.channels) #TODO: dos veces?
+        sound = sound.set_channels(self.channels)
         return sound
 
     def _get_sound_for_beat(self, beat_type: BeatType) -> AudioSegment:
         """
-        Returns the A corresponding to the beat type.
+        Returns the AudioSegment corresponding to the beat type.
         """
         if beat_type == BeatType.DOWNBEAT:
             return self.downbeat_sound
