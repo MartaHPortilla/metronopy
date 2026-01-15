@@ -20,10 +20,16 @@ from audio_builder import AudioBuilder
 from video_builder import VideoBuilder
 
 class Composer:
-    def __init__(self, metronome: Metronome, audio_builder: AudioBuilder, video_builder: VideoBuilder):
+    def __init__(
+            self, 
+            metronome: Metronome, 
+            audio_builder: AudioBuilder,
+            video_builder: VideoBuilder,
+        ):
         self.metronome = metronome
         self.audio_builder = audio_builder
         self.video_builder = video_builder
+        self._temp_audio_path: str | None = None # track temp audio file for later cleanup
 
     def compose(self) -> VideoClip:
         """
@@ -34,6 +40,10 @@ class Composer:
 
         Returns final video clip with audio attached.
         """
+
+        if self._temp_audio_path is not None:
+            raise RuntimeError("compose() has already been called. Please cleanup() before calling again.")
+        
         # Generate beat sequence calling metronome function
         beats = self.metronome.build_beat_sequence()
 
@@ -42,15 +52,25 @@ class Composer:
         
         # Export AudioSegment to a temporary wav file
         audio_path = self._generate_temp_audio_file_and_path(audio_segment)
+        # Keep track of temp audio path for later cleanup
+        self._temp_audio_path = audio_path
 
         
         # Build video and combine with audio 
         video_clip = self._generate_video_clip(beats)
         final_clip = self._attach_audio_to_video(video_clip, audio_path)
-        final_clip._temp_audio_path = audio_path # store temp path for later cleanup
         return final_clip # REAL final audiovisual clip
-       
+    
+    # ----- Public Methods ----- #
 
+    def cleanup(self) -> None:
+        """
+        Cleans up any temporary resources created during composition.
+        Should be called after the final video has been exported.
+        """
+        if self._temp_audio_path and os.path.exists(self._temp_audio_path):
+            os.remove(self._temp_audio_path)
+            self._temp_audio_path = None
 
     # ----- Helper Methods ----- #
 
@@ -70,15 +90,13 @@ class Composer:
         Creates and post-processes the audio segment based on beat timing.
         """
         audio_segment = self.audio_builder.build_audio_track(beats)
-        audio_segment = audio_segment.normalize() # audio levels
-        audio_segment = audio_segment.set_channels(1) # mono
         return audio_segment
 
     def _generate_video_clip(self, beats: List[Beat]) -> VideoClip:
         """
         Builds the silent video clip based on beat timing.
         """
-        silent_video_clip = self.video_builder.build_video_track(beats=beats, metronome=self.metronome)
+        silent_video_clip = self.video_builder.build_video_track(beats=beats, seconds_per_beat= self.metronome.seconds_per_beat)
         return silent_video_clip
 
     def _attach_audio_to_video(self, silent_video_clip: VideoClip, audio_path: str) -> VideoClip:
@@ -86,12 +104,4 @@ class Composer:
         Attaches audio to video and ensures synchronization.
         """
         audio_clip = AudioFileClip(audio_path)
-        audio_clip = audio_clip.set_fps(44100)
         return silent_video_clip.set_audio(audio_clip)
-   
-    def _cleanup_temp_files(self, audio_path: str) -> None:
-        """
-        Removes temporary files created during composition.
-        """
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
