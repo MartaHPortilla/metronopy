@@ -1,6 +1,6 @@
 # 🎵 Metronopy
 
-![Python](https://img.shields.io/badge/python-3.11+-blue)
+![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![Status](https://img.shields.io/badge/status-MVP-success)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -16,7 +16,6 @@
     - [2️⃣ Install dependencies](#2️⃣-install-dependencies)
     - [3️⃣ Run the project](#3️⃣-run-the-project)
   - [⚙️ Configuration](#️-configuration)
-    - [Metronome parameters](#metronome-parameters)
     - [Audio and video configuration](#audio-and-video-configuration)
   - [🧪 Design Principles](#-design-principles)
   - [📝 Project Status](#-project-status)
@@ -29,7 +28,8 @@ This project is designed with **clean architecture, clear responsibilities and s
 
 ## ✨ Features
 
-- ⏱️ Accurate metronome timing based on BPM (Beats Per Minute) and number of bars
+- ⏳ Support for metronome generation based on target duration (seconds) **or number of bars**
+- ⏱️ Accurate metronome timing based on BPM (Beats Per Minute)
 - 🔊 Audio generation with different sounds for:
   - Downbeat
   - Accent beats
@@ -43,14 +43,14 @@ This project is designed with **clean architecture, clear responsibilities and s
 
 Metronopy follows a **modular, orchestration-based architecture:**
 
-| Module              | Responsibility                                                                |
-| ------------------- | ----------------------------------------------------------------------------- |
-| `Metronome`         | Timing logic (BPM, beats, durations)                                          |
-| `Beat` / `BeatType` | Musical domain model that represents a musical event and its musical emphasis |
-| `AudioBuilder`      | Builds the audio click track                                                  |
-| `VideoBuilder`      | Builds the silent video track                                                 |
-| `Composer`          | Combines audio + video                                                        |
-| `__main__`          | Application entry point                                                       |
+| Module              | Responsibility                                                                    |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `Metronome`         | Timing logic (BPM, beats, durations)                                              |
+| `Beat` / `BeatType` | Musical domain model that represents a musical event and its musical emphasis     |
+| `AudioBuilder`      | Builds a fully processed audio track (duration, sample rate, channels) from beats |
+| `VideoBuilder`      | Builds a silent video track from beats and FPS                                    |
+| `Composer`          | Orchestration (combines audio + video)                                            |
+| `__main__`          | Application entry point                                                           |
 
 This design allows easy extension (UI, CLI, different renderers) without modifying the core domain.
 
@@ -99,7 +99,7 @@ end
 
 ## 🚀 How to run
 
-> ⚠️ **Before starting**  you need to have [**Python 3.10+**](https://www.python.org/downloads/) installed and [**FFmpeg**](https://ffmpeg.org/download.html) installed and available in yout system PATH
+> ⚠️ **Before starting**  you need to have [**Python 3.10+**](https://www.python.org/downloads/) installed and [**FFmpeg**](https://ffmpeg.org/download.html) installed and available in your system PATH
 
 ### 1️⃣ Create and activate a virtual environment (optional but highly recommended)
 
@@ -125,23 +125,58 @@ The final video will be generated in `output/final/`
 
 ## ⚙️ Configuration
 
-Metronopy is configured directly in the entry point (`__main__.py`).
+Metronopy parameters are configured directly in the entry point (`__main__.py`).
 
-### Metronome parameters
+- `fps`: frames per second
+- `bpm`: speed of the metronome
+
+The following parameters are mutually exclusive (comment the one you don't use):
+
+- `number_of_bars`: establish a fixed number of musical bars.
+
+- `target_duration_seconds`: generates beats until at least the given duration is reached, completing if needed the last bar to preserve musical integrity.
+
+Example configuration in `__main__.py`
 
 ```python
-metronome = Metronome(
-    bpm=120,          # Tempo (beats per minute)
-    number_of_bars=16 # Total bars to generate
-)
+# --- Configuration ---
+fps: int = 30
+bpm: int = 140
+    
+#number_of_bars OR target_duration_seconds
+number_of_bars: int = 32
+target_duration_seconds: float = 300.0
 ```
 
-- `bpm`: Controls the speed of the metronome
-- `number_of_bars`: Defines the total duration of the generated video
+Metronome initialization (choose one, comment the other):
 
-Higher BPM results in faster clicks and shorter beat durations.
+```python
+# using number of bars
+metronome_bars = Metronome(bpm=bpm, number_of_bars=number_of_bars) 
+# using duration
+metronome_duration = Metronome(bpm=bpm, target_duration_seconds=target_duration_seconds)
+```
+
+Also, the Composer object needs to receive the object metronome chosen.
+
+```python
+#  --- Composition ---
+composer = Composer(
+  metronome=metronome_duration,   # OR metronome=metronome_bars,
+  audio_builder=audio_builder, 
+  video_builder=video_builder
+  )
+```
 
 ### Audio and video configuration
+
+The `AudioBuilder` module ensures a fully processed audio track:
+
+- Ensuring deterministic total duration
+- Enforcing sample rate and channel configuration
+- Producing an audio track ready for direct video attachment
+
+Each sound is triggered depending on the musical role of the beat.
 
 ```python
 audio_builder = AudioBuilder(
@@ -151,7 +186,7 @@ audio_builder = AudioBuilder(
     )
 ```
 
-Each sound is triggered depending on the musical role of the beat.
+For `VideoBuilder,`, the image resource is displayed according to the position of the beat.
 
 ```python
 video_builder = VideoBuilder(
@@ -162,7 +197,7 @@ video_builder = VideoBuilder(
     )
 ```
 
-The image resource is displayed according to the position of the beat.
+Add your own image and audio resources to the `assets/images` or `assets/audio` directories and updating the paths.
 
 ## 🧪 Design Principles
 
@@ -171,6 +206,10 @@ The image resource is displayed according to the position of the beat.
 - ✅ Strong typing with Python type hints
 - ✅ Clear separation between logic and infrastructure
 - ✅ No “magic” timing — everything comes from the Metronome
+- ✅ Deterministic outputs for reproducibility
+- ✅ Builders produce finalized artifacts
+- ✅ `Composer` does not perform any audio or video post-processing. It only orchestrates already finalized components.
+- ✅ No hidden defaults: all relevant parameters are explicit.
 
 ## 📝 Project Status
 
@@ -179,6 +218,7 @@ Metronopy is currently in **MVP stage**.
 🟢 Implemented:
 
 - Deterministic beat generation
+- Explicit FPS configuration from entry point
 - Audio track construction (Pydub)
 - Video track construction (MoviePy)
 - Precise audio/video synchronization
