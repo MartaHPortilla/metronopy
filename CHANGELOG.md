@@ -22,6 +22,7 @@ This project follows:
 - AudioBuilder now produces a fully finalized AudioSegment with deterministic duration.
 - Audio post-processing (sample rate, channels) is fully encapsulated in AudioBuilder.
 - Composer no longer handles audio technical parameters.
+- Update documentation to reflect duration-based metronome and full postprocess in AudioBuilder.
 
 ### Refactored
 
@@ -60,5 +61,4 @@ This project follows:
 
 - Fixed time signature (4/4)
 - No automated test suite yet
-- FPS is currently implicit and not user-configurable
 - No CLI arguments (configuration is code-based)
