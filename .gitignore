@@ -23,9 +23,11 @@ ENV/
 assets/_legacy/
 
 # =========================
-# Scripts
+# Scripts and files
 # =========================
-borrar.py
+delete.py
+delete.md
+delete.txt
 
 
 # =========================
